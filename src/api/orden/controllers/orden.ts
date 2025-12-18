@@ -138,14 +138,12 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
         ctx.throw(400, `ID de producto inválido: ${producto.id}`);
       }
 
-      const orderItem = {
-        // Strapi v5 espera un ID simple en relaciones dentro de componentes (manyToOne)
-        productos: productoId,
+      return {
+        productId: productoId,
         quantity: item.quantity,
         unitPrice,
         subtotal,
       };
-      return orderItem;
     });
 
     const shippingInfo = body.shippingInfo ?? body.shipping ?? undefined;

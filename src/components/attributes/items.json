@@ -6,7 +6,7 @@
   },
   "options": {},
   "attributes": {
-    "productos": {
+    "productId": {
       "type": "integer",
       "required": true
     },
