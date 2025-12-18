@@ -134,8 +134,8 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
 
       const subtotal = unitPrice * item.quantity;
       return {
-        // Use connect with objects; relations inside components require this shape
-        productos: { connect: [{ id: producto.id }] },
+        // Use a single ID; Strapi v5 complains if an object/array is provided here
+        productos: producto.id,
         quantity: item.quantity,
         unitPrice,
         subtotal,
