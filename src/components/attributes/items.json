@@ -7,9 +7,8 @@
   "options": {},
   "attributes": {
     "productos": {
-      "type": "relation",
-      "relation": "manyToOne",
-      "target": "api::producto.producto"
+      "type": "integer",
+      "required": true
     },
     "quantity": {
       "type": "decimal",

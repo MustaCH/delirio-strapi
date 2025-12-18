@@ -23,7 +23,7 @@ export interface AttributesItems extends Struct.ComponentSchema {
     icon: 'shoppingCart';
   };
   attributes: {
-    productos: Schema.Attribute.Relation<'manyToOne', 'api::producto.producto'>;
+    productos: Schema.Attribute.Integer & Schema.Attribute.Required;
     quantity: Schema.Attribute.Decimal & Schema.Attribute.Required;
     subtotal: Schema.Attribute.Decimal;
     unitPrice: Schema.Attribute.Decimal;
