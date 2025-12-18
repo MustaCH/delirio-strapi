@@ -1,0 +1,56 @@
+{
+  "kind": "collectionType",
+  "collectionName": "ordenes",
+  "info": {
+    "singularName": "orden",
+    "pluralName": "ordenes",
+    "displayName": "Ordenes"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "cliente": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::categoria.categoria",
+      "inversedBy": "ordenes"
+    },
+    "orderItems": {
+      "type": "component",
+      "component": "attributes.items",
+      "repeatable": true
+    },
+    "shippingInfo": {
+      "type": "component",
+      "component": "attributes.shipping-address",
+      "repeatable": false
+    },
+    "paymentId": {
+      "type": "string",
+      "required": true
+    },
+    "estado": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "pending_payment",
+        "payment_processing",
+        "paid",
+        "preparing_shipment",
+        "shipping_created",
+        "shipped",
+        "delivered",
+        "refounded",
+        "canceled"
+      ]
+    },
+    "pagos": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::pago.pago",
+      "mappedBy": "orden"
+    }
+  }
+}

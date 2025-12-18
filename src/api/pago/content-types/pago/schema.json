@@ -1,0 +1,62 @@
+{
+  "kind": "collectionType",
+  "collectionName": "pagos",
+  "info": {
+    "singularName": "pago",
+    "pluralName": "pagos",
+    "displayName": "Pagos"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "orden": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::orden.orden",
+      "inversedBy": "pagos"
+    },
+    "paymentId": {
+      "type": "string",
+      "required": true
+    },
+    "type": {
+      "type": "enumeration",
+      "required": true,
+      "enum": [
+        "checkout",
+        "subscription",
+        "other"
+      ]
+    },
+    "method": {
+      "type": "string",
+      "required": true
+    },
+    "estado": {
+      "type": "enumeration",
+      "enum": [
+        "pending",
+        "approved",
+        "rejected",
+        "refunded"
+      ]
+    },
+    "amount": {
+      "type": "decimal"
+    },
+    "currency": {
+      "type": "string"
+    },
+    "rawResponse": {
+      "type": "json"
+    },
+    "creation": {
+      "type": "datetime"
+    },
+    "update": {
+      "type": "datetime"
+    }
+  }
+}

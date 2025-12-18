@@ -1,0 +1,34 @@
+{
+  "collectionName": "components_attributes_address_attributes",
+  "info": {
+    "displayName": "address_attributes",
+    "icon": "train"
+  },
+  "options": {},
+  "attributes": {
+    "street": {
+      "type": "string",
+      "required": true
+    },
+    "city": {
+      "type": "string",
+      "required": true
+    },
+    "state": {
+      "type": "string",
+      "required": true
+    },
+    "postalCode": {
+      "type": "string",
+      "required": true
+    },
+    "country": {
+      "type": "string",
+      "required": true
+    },
+    "additionalInfo": {
+      "type": "blocks"
+    }
+  },
+  "config": {}
+}

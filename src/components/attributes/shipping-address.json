@@ -1,0 +1,38 @@
+{
+  "collectionName": "components_attributes_shipping_addresses",
+  "info": {
+    "displayName": "shipping_address",
+    "icon": "priceTag"
+  },
+  "options": {},
+  "attributes": {
+    "street": {
+      "type": "string",
+      "required": true
+    },
+    "city": {
+      "type": "string",
+      "required": true
+    },
+    "state": {
+      "type": "string",
+      "required": true
+    },
+    "postalCode": {
+      "type": "string",
+      "required": true
+    },
+    "country": {
+      "type": "string",
+      "required": true
+    },
+    "additionalInfo": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string",
+      "required": true
+    }
+  },
+  "config": {}
+}

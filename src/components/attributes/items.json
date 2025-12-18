@@ -1,0 +1,26 @@
+{
+  "collectionName": "components_attributes_items",
+  "info": {
+    "displayName": "items",
+    "icon": "shoppingCart"
+  },
+  "options": {},
+  "attributes": {
+    "productos": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::producto.producto"
+    },
+    "quantity": {
+      "type": "decimal",
+      "required": true
+    },
+    "unitPrice": {
+      "type": "decimal"
+    },
+    "subtotal": {
+      "type": "decimal"
+    }
+  },
+  "config": {}
+}

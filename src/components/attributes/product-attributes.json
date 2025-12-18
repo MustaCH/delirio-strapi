@@ -1,0 +1,19 @@
+{
+  "collectionName": "components_attributes_product_attributes",
+  "info": {
+    "displayName": "product_attributes",
+    "icon": "shirt"
+  },
+  "options": {},
+  "attributes": {
+    "attributeName": {
+      "type": "string",
+      "required": true
+    },
+    "attributeValue": {
+      "type": "string",
+      "required": true
+    }
+  },
+  "config": {}
+}
