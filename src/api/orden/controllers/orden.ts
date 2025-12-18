@@ -145,37 +145,51 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
 
     const { token: orderToken, tokenHash: publicTokenHash } = generateOrderToken();
 
-    const orden = await strapi.db.query('api::orden.orden').create({
-      data: {
-        cliente: cliente.id,
-        orderItems,
-        shippingInfo,
-        estado: 'pending_payment',
-        paymentId: `mp_pref_pending_${Date.now()}`,
-        publicTokenHash,
-        publishedAt: new Date().toISOString(),
-      },
-      select: ['id', 'estado', 'paymentId'],
-    });
+    let orden: any;
+    try {
+      orden = await strapi.db.query('api::orden.orden').create({
+        data: {
+          cliente: cliente.id,
+          orderItems,
+          shippingInfo,
+          estado: 'pending_payment',
+          paymentId: `mp_pref_pending_${Date.now()}`,
+          publicTokenHash,
+          publishedAt: new Date().toISOString(),
+        },
+        select: ['id', 'estado', 'paymentId'],
+      });
+    } catch (err: any) {
+      const errorId = randomBytes(8).toString('hex');
+      strapi.log.error(`[checkout:${errorId}] Failed to create order`, err);
+      ctx.throw(500, `No se pudo crear la orden (errorId=${errorId})`);
+    }
 
     const mp = strapi.service('api::mercadopago.mercadopago');
-    const preference = await mp.createPreference({
-      orderId: orden.id,
-      payer: {
-        name: cliente.name,
-        surname: cliente.lastname,
-        email: cliente.email,
-        phone: { number: cliente.phone },
-      },
-      items: normalizedItems.map((item: any) => {
-        const producto = productoPorId.get(item.productId);
-        return {
-          title: producto.name,
-          quantity: item.quantity,
-          unitPrice: Number(producto.price),
-        };
-      }),
-    });
+    let preference: any;
+    try {
+      preference = await mp.createPreference({
+        orderId: orden.id,
+        payer: {
+          name: cliente.name,
+          surname: cliente.lastname,
+          email: cliente.email,
+          phone: { number: cliente.phone },
+        },
+        items: normalizedItems.map((item: any) => {
+          const producto = productoPorId.get(item.productId);
+          return {
+            title: producto.name,
+            quantity: item.quantity,
+            unitPrice: Number(producto.price),
+          };
+        }),
+      });
+    } catch (err: any) {
+      const errorId = randomBytes(8).toString('hex');
+      strapi.log.error(`[checkout:${errorId}] Mercado Pago createPreference failed`, err);
+      ctx.throw(502, `Mercado Pago no pudo crear la preferencia (errorId=${errorId})`);
+    }
 
     await strapi.db.query('api::orden.orden').update({
       where: { id: orden.id },
