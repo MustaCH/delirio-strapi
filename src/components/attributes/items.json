@@ -8,7 +8,7 @@
   "attributes": {
     "productos": {
       "type": "relation",
-      "relation": "oneToMany",
+      "relation": "manyToOne",
       "target": "api::producto.producto"
     },
     "quantity": {
