@@ -51,6 +51,19 @@
       "relation": "oneToMany",
       "target": "api::pago.pago",
       "mappedBy": "orden"
+    },
+    "publicTokenHash": {
+      "type": "string",
+      "private": true
+    },
+    "stockDecrementedAt": {
+      "type": "datetime"
+    },
+    "stockDecrementFailedAt": {
+      "type": "datetime"
+    },
+    "stockDecrementError": {
+      "type": "text"
     }
   }
 }

@@ -39,6 +39,12 @@ function getEnv(name: string): string | undefined {
   return String(value).trim() || undefined;
 }
 
+function rowCount(result: unknown): number {
+  if (Array.isArray(result)) return result.length;
+  if (typeof result === 'number') return result;
+  return 0;
+}
+
 function requireEnv(name: string): string {
   const value = getEnv(name);
   if (!value) {
@@ -173,6 +179,87 @@ function resolveOrderIdFromPayment(payment: MercadoPagoPayment): number | undefi
   return undefined;
 }
 
+async function decrementStockForOrder(strapi: any, orderId: number): Promise<void> {
+  const now = new Date().toISOString();
+
+  await strapi.db.transaction(async ({ trx }: { trx: any }) => {
+    const locked = await strapi.db
+      .getConnection('ordenes')
+      .transacting(trx)
+      .where({ id: orderId })
+      .forUpdate()
+      .first();
+
+    if (!locked) return;
+
+    const orden = await strapi.db.query('api::orden.orden').findOne({
+      where: { id: orderId },
+      select: ['id', 'stockDecrementedAt', 'stockDecrementFailedAt'],
+      populate: {
+        orderItems: {
+          populate: {
+            productos: { select: ['id'] },
+          },
+        },
+      },
+    });
+
+    if (!orden) return;
+    if ((orden as any).stockDecrementedAt) return;
+    if ((orden as any).stockDecrementFailedAt) return;
+
+    const orderItems = Array.isArray((orden as any).orderItems) ? (orden as any).orderItems : [];
+    const qtyByProductId = new Map<number, number>();
+
+    for (const item of orderItems) {
+      const quantityRaw = Number(item?.quantity);
+      if (!Number.isFinite(quantityRaw) || quantityRaw <= 0) continue;
+      const quantity = Math.trunc(quantityRaw);
+      if (quantity <= 0) continue;
+
+      const productos = Array.isArray(item?.productos) ? item.productos : item?.productos ? [item.productos] : [];
+      for (const producto of productos) {
+        const productId = Number(producto?.id ?? producto);
+        if (!Number.isFinite(productId) || productId <= 0) continue;
+        qtyByProductId.set(productId, (qtyByProductId.get(productId) ?? 0) + quantity);
+      }
+    }
+
+    if (qtyByProductId.size === 0) {
+      await strapi.db.query('api::orden.orden').update({
+        where: { id: orderId },
+        data: {
+          stockDecrementFailedAt: now,
+          stockDecrementError: 'No order items/products found to decrement.',
+        },
+      });
+      return;
+    }
+
+    for (const [productId, quantity] of qtyByProductId.entries()) {
+      const result = await strapi.db
+        .getConnection('productos')
+        .transacting(trx)
+        .where({ id: productId })
+        .andWhere('stock', '>=', quantity)
+        .decrement('stock', quantity);
+
+      if (rowCount(result) === 0) {
+        throw new Error(`Stock insuficiente para producto ${productId}`);
+      }
+    }
+
+    await strapi.db.query('api::orden.orden').update({
+      where: { id: orderId },
+      data: {
+        stockDecrementedAt: now,
+        stockDecrementFailedAt: null,
+        stockDecrementError: null,
+      },
+    });
+  });
+}
+
 export default ({ strapi }: { strapi: any }) => ({
   buildNotificationUrl,
 
@@ -255,56 +342,79 @@ export default ({ strapi }: { strapi: any }) => ({
       payment.payment_type_id ??
       'unknown';
 
-    const existingPago = await strapi.db.query('api::pago.pago').findOne({
-      where: { paymentId },
-      select: ['id'],
-    });
-
-    if (existingPago?.id) {
-      await strapi.db.query('api::pago.pago').update({
-        where: { id: existingPago.id },
-        data: {
-          estado: pagoEstado,
-          method,
-          amount: payment.transaction_amount,
-          currency: payment.currency_id,
-          rawResponse: payment as any,
-          update: payment.date_last_updated,
-        },
-      });
-    } else {
-      const created = await strapi.db.query('api::pago.pago').create({
-        data: {
-          orden: orderId,
-          paymentId,
-          type: 'checkout',
-          method,
-          estado: pagoEstado,
-          amount: payment.transaction_amount,
-          currency: payment.currency_id,
-          rawResponse: payment as any,
-          creation: payment.date_created,
-          update: payment.date_last_updated,
-          publishedAt: new Date().toISOString(),
-        },
+    const result = await strapi.db.transaction(async () => {
+      const existingPago = await strapi.db.query('api::pago.pago').findOne({
+        where: { paymentId },
         select: ['id'],
       });
-      (existingPago as any) = created;
-    }
 
-    await strapi.db.query('api::orden.orden').update({
-      where: { id: orderId },
-      data: {
-        estado: ordenEstado,
-        paymentId,
-      },
+      let pagoId: number | undefined;
+
+      if (existingPago?.id) {
+        await strapi.db.query('api::pago.pago').update({
+          where: { id: existingPago.id },
+          data: {
+            estado: pagoEstado,
+            method,
+            amount: payment.transaction_amount,
+            currency: payment.currency_id,
+            rawResponse: payment as any,
+            update: payment.date_last_updated,
+          },
+        });
+        pagoId = existingPago.id as any;
+      } else {
+        const created = await strapi.db.query('api::pago.pago').create({
+          data: {
+            orden: orderId,
+            paymentId,
+            type: 'checkout',
+            method,
+            estado: pagoEstado,
+            amount: payment.transaction_amount,
+            currency: payment.currency_id,
+            rawResponse: payment as any,
+            creation: payment.date_created,
+            update: payment.date_last_updated,
+            publishedAt: new Date().toISOString(),
+          },
+          select: ['id'],
+        });
+        pagoId = (created as any)?.id;
+      }
+
+      await strapi.db.query('api::orden.orden').update({
+        where: { id: orderId },
+        data: {
+          estado: ordenEstado,
+          paymentId,
+        },
+      });
+
+      return {
+        orderId,
+        pagoId,
+        ordenEstado,
+        pagoEstado,
+      };
     });
 
-    return {
-      orderId,
-      pagoId: (existingPago as any)?.id,
-      ordenEstado,
-      pagoEstado,
-    };
+    if (ordenEstado === 'paid') {
+      try {
+        await decrementStockForOrder(strapi, orderId);
+      } catch (err: any) {
+        const message = String(err?.message ?? err);
+        strapi.log.error('[mercadopago] Stock decrement failed', err);
+        await strapi.db.query('api::orden.orden').update({
+          where: { id: orderId },
+          data: {
+            stockDecrementFailedAt: new Date().toISOString(),
+            stockDecrementError: message,
+          },
+        });
+      }
+    }
+
+    return result;
   },
 });

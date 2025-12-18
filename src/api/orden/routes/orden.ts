@@ -4,4 +4,7 @@
 
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreRouter('api::orden.orden');
+// Content API: disabled (orders are created via checkout endpoint)
+export default factories.createCoreRouter('api::orden.orden', {
+  only: [],
+});

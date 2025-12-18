@@ -587,11 +587,15 @@ export interface ApiOrdenOrden extends Struct.CollectionTypeSchema {
     orderItems: Schema.Attribute.Component<'attributes.items', true>;
     pagos: Schema.Attribute.Relation<'oneToMany', 'api::pago.pago'>;
     paymentId: Schema.Attribute.String & Schema.Attribute.Required;
+    publicTokenHash: Schema.Attribute.String & Schema.Attribute.Private;
     publishedAt: Schema.Attribute.DateTime;
     shippingInfo: Schema.Attribute.Component<
       'attributes.shipping-address',
       false
     >;
+    stockDecrementedAt: Schema.Attribute.DateTime;
+    stockDecrementError: Schema.Attribute.Text;
+    stockDecrementFailedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
     updatedBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

@@ -2,6 +2,7 @@
  * orden controller
  */
 
+import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { factories } from '@strapi/strapi';
 
 function asPositiveInt(value: unknown): number | undefined {
@@ -10,6 +11,29 @@ function asPositiveInt(value: unknown): number | undefined {
   const int = Math.trunc(num);
   if (int <= 0) return undefined;
   return int;
+}
+
+function getQueryString(value: unknown): string | undefined {
+  if (typeof value === 'string') return value;
+  if (Array.isArray(value) && typeof value[0] === 'string') return value[0];
+  return undefined;
+}
+
+function sha256Hex(value: string): string {
+  return createHash('sha256').update(value).digest('hex');
+}
+
+function safeEqualHex(a: string, b: string): boolean {
+  if (!a || !b) return false;
+  if (a.length !== b.length) return false;
+  const aBuf = Buffer.from(a, 'hex');
+  const bBuf = Buffer.from(b, 'hex');
+  return timingSafeEqual(aBuf, bBuf);
+}
+
+function generateOrderToken(): { token: string; tokenHash: string } {
+  const token = randomBytes(32).toString('base64url');
+  return { token, tokenHash: sha256Hex(token) };
 }
 
 export default factories.createCoreController('api::orden.orden', ({ strapi }) => ({
@@ -119,6 +143,8 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
 
     const shippingInfo = body.shippingInfo ?? body.shipping ?? undefined;
 
+    const { token: orderToken, tokenHash: publicTokenHash } = generateOrderToken();
+
     const orden = await strapi.db.query('api::orden.orden').create({
       data: {
         cliente: cliente.id,
@@ -126,6 +152,7 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
         shippingInfo,
         estado: 'pending_payment',
         paymentId: `mp_pref_pending_${Date.now()}`,
+        publicTokenHash,
         publishedAt: new Date().toISOString(),
       },
       select: ['id', 'estado', 'paymentId'],
@@ -157,10 +184,91 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
 
     ctx.body = {
       orderId: orden.id,
+      orderToken,
       preferenceId: preference.id,
       init_point: preference.init_point,
       sandbox_init_point: preference.sandbox_init_point,
     };
   },
-}));
 
+  async publicStatus(ctx) {
+    const orderId = asPositiveInt(ctx.params?.id);
+    if (!orderId) ctx.throw(400, 'invalid order id');
+
+    const tokenFromHeader = getQueryString((ctx.request as any)?.headers?.['x-order-token']);
+    const tokenFromQuery = getQueryString(ctx.query?.token);
+    const orderToken = (tokenFromHeader ?? tokenFromQuery)?.trim();
+
+    if (!orderToken) ctx.throw(401, 'order token is required');
+
+    const tokenHash = sha256Hex(orderToken);
+
+    const orden = await strapi.db.query('api::orden.orden').findOne({
+      where: { id: orderId },
+      select: [
+        'id',
+        'estado',
+        'createdAt',
+        'updatedAt',
+        'paymentId',
+        'publicTokenHash',
+        'stockDecrementedAt',
+        'stockDecrementFailedAt',
+        'stockDecrementError',
+      ],
+      populate: {
+        orderItems: {
+          populate: {
+            productos: {
+              select: ['id', 'name', 'slug'],
+            },
+          },
+        },
+        shippingInfo: true,
+      },
+    });
+
+    if (!orden) ctx.throw(404, 'order not found');
+
+    const storedHash = (orden as any).publicTokenHash as string | undefined;
+    if (!storedHash || !safeEqualHex(storedHash, tokenHash)) {
+      ctx.throw(403, 'invalid order token');
+    }
+
+    const pagos = await strapi.db.query('api::pago.pago').findMany({
+      where: { orden: orderId },
+      select: ['id', 'paymentId', 'estado', 'type', 'method', 'amount', 'currency', 'creation', 'createdAt'],
+      orderBy: { createdAt: 'desc' },
+    });
+
+    const responseItems = Array.isArray((orden as any).orderItems)
+      ? (orden as any).orderItems.map((item: any) => {
+          const productos = Array.isArray(item?.productos) ? item.productos : item?.productos ? [item.productos] : [];
+          const producto = productos[0];
+          return {
+            productId: producto?.id,
+            productName: producto?.name,
+            productSlug: producto?.slug,
+            quantity: item?.quantity,
+            unitPrice: item?.unitPrice,
+            subtotal: item?.subtotal,
+          };
+        })
+      : [];
+
+    ctx.body = {
+      id: orden.id,
+      estado: (orden as any).estado,
+      createdAt: (orden as any).createdAt,
+      updatedAt: (orden as any).updatedAt,
+      items: responseItems,
+      shippingInfo: (orden as any).shippingInfo ?? null,
+      payments: pagos,
+      stock: {
+        decrementedAt: (orden as any).stockDecrementedAt ?? null,
+        failedAt: (orden as any).stockDecrementFailedAt ?? null,
+        error: (orden as any).stockDecrementError ?? null,
+      },
+    };
+  },
+}));
