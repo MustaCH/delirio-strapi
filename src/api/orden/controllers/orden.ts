@@ -134,7 +134,8 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
 
       const subtotal = unitPrice * item.quantity;
       return {
-        productos: [producto.id],
+        // Use connect syntax to avoid nested id errors on relations inside components
+        productos: { connect: [producto.id] },
         quantity: item.quantity,
         unitPrice,
         subtotal,
