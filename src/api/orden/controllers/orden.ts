@@ -133,13 +133,19 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
       }
 
       const subtotal = unitPrice * item.quantity;
-      return {
-        // Use a single ID; Strapi v5 complains if an object/array is provided here
-        productos: producto.id,
+      const productoId = Number(producto.id);
+      if (!Number.isFinite(productoId)) {
+        ctx.throw(400, `ID de producto inválido: ${producto.id}`);
+      }
+
+      const orderItem = {
+        // Strapi v5 espera un ID simple en relaciones dentro de componentes (manyToOne)
+        productos: productoId,
         quantity: item.quantity,
         unitPrice,
         subtotal,
       };
+      return orderItem;
     });
 
     const shippingInfo = body.shippingInfo ?? body.shipping ?? undefined;
