@@ -18,9 +18,8 @@
       "inversedBy": "ordenes"
     },
     "orderItems": {
-      "type": "component",
-      "component": "attributes.items",
-      "repeatable": true
+      "type": "json",
+      "required": true
     },
     "shippingInfo": {
       "type": "component",

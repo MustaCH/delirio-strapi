@@ -234,15 +234,9 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
         'stockDecrementedAt',
         'stockDecrementFailedAt',
         'stockDecrementError',
+        'orderItems',
       ],
       populate: {
-        orderItems: {
-          populate: {
-            productos: {
-              select: ['id', 'name', 'slug'],
-            },
-          },
-        },
         shippingInfo: true,
       },
     });
@@ -261,18 +255,12 @@ export default factories.createCoreController('api::orden.orden', ({ strapi }) =
     });
 
     const responseItems = Array.isArray((orden as any).orderItems)
-      ? (orden as any).orderItems.map((item: any) => {
-          const productos = Array.isArray(item?.productos) ? item.productos : item?.productos ? [item.productos] : [];
-          const producto = productos[0];
-          return {
-            productId: producto?.id,
-            productName: producto?.name,
-            productSlug: producto?.slug,
-            quantity: item?.quantity,
-            unitPrice: item?.unitPrice,
-            subtotal: item?.subtotal,
-          };
-        })
+      ? (orden as any).orderItems.map((item: any) => ({
+          productId: item?.productId,
+          quantity: item?.quantity,
+          unitPrice: item?.unitPrice,
+          subtotal: item?.subtotal,
+        }))
       : [];
 
     ctx.body = {

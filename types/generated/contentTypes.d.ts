@@ -584,7 +584,7 @@ export interface ApiOrdenOrden extends Struct.CollectionTypeSchema {
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<'oneToMany', 'api::orden.orden'> &
       Schema.Attribute.Private;
-    orderItems: Schema.Attribute.Component<'attributes.items', true>;
+    orderItems: Schema.Attribute.JSON & Schema.Attribute.Required;
     pagos: Schema.Attribute.Relation<'oneToMany', 'api::pago.pago'>;
     paymentId: Schema.Attribute.String & Schema.Attribute.Required;
     publicTokenHash: Schema.Attribute.String & Schema.Attribute.Private;
