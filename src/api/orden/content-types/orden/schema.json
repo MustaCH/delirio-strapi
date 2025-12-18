@@ -14,7 +14,7 @@
     "cliente": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "api::categoria.categoria",
+      "target": "api::cliente.cliente",
       "inversedBy": "ordenes"
     },
     "orderItems": {

@@ -31,6 +31,12 @@
       "type": "component",
       "component": "attributes.address-attributes",
       "repeatable": true
+    },
+    "ordenes": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::orden.orden",
+      "mappedBy": "cliente"
     }
   }
 }

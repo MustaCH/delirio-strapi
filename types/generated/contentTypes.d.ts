@@ -498,7 +498,6 @@ export interface ApiCategoriaCategoria extends Struct.CollectionTypeSchema {
           localized: true;
         };
       }>;
-    ordenes: Schema.Attribute.Relation<'oneToMany', 'api::orden.orden'>;
     productos: Schema.Attribute.Relation<
       'manyToMany',
       'api::producto.producto'
@@ -544,6 +543,7 @@ export interface ApiClienteCliente extends Struct.CollectionTypeSchema {
     > &
       Schema.Attribute.Private;
     name: Schema.Attribute.String & Schema.Attribute.Required;
+    ordenes: Schema.Attribute.Relation<'oneToMany', 'api::orden.orden'>;
     phone: Schema.Attribute.String & Schema.Attribute.Required;
     publishedAt: Schema.Attribute.DateTime;
     updatedAt: Schema.Attribute.DateTime;
@@ -563,7 +563,7 @@ export interface ApiOrdenOrden extends Struct.CollectionTypeSchema {
     draftAndPublish: true;
   };
   attributes: {
-    cliente: Schema.Attribute.Relation<'manyToOne', 'api::categoria.categoria'>;
+    cliente: Schema.Attribute.Relation<'manyToOne', 'api::cliente.cliente'>;
     createdAt: Schema.Attribute.DateTime;
     createdBy: Schema.Attribute.Relation<'oneToOne', 'admin::user'> &
       Schema.Attribute.Private;

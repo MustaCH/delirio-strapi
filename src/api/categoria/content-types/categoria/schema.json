@@ -30,12 +30,6 @@
       "target": "api::producto.producto",
       "inversedBy": "categorias"
     },
-    "ordenes": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::orden.orden",
-      "mappedBy": "cliente"
-    },
     "slug": {
       "type": "uid",
       "pluginOptions": {
