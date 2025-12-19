@@ -8,6 +8,13 @@ export default {
         auth: false,
       },
     },
+    {
+      method: 'GET',
+      path: '/clientes/public',
+      handler: 'cliente.listPublic',
+      config: {
+        auth: false,
+      },
+    },
   ],
 };
-

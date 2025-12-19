@@ -64,5 +64,17 @@ export default factories.createCoreController('api::cliente.cliente', ({ strapi 
       phone: cliente.phone,
     };
   },
-}));
 
+  /**
+   * Lista clientes de forma pública (solo para pruebas). Retorna los últimos 50.
+   */
+  async listPublic(ctx) {
+    const clientes = await strapi.db.query('api::cliente.cliente').findMany({
+      select: ['id', 'name', 'lastname', 'email', 'phone', 'createdAt', 'updatedAt'],
+      orderBy: { createdAt: 'desc' },
+      limit: 50,
+    });
+
+    ctx.body = { data: clientes };
+  },
+}));
