@@ -2,12 +2,18 @@
   const productsEl = document.getElementById('products');
   const statusEl = document.getElementById('status');
   const refreshBtn = document.getElementById('refresh');
+  const saveClientBtn = document.getElementById('save-client');
+  const resetClientBtn = document.getElementById('reset-client');
+  const clientInfoEl = document.getElementById('client-info');
 
   const API_BASE = window.location.origin;
   const api = {
     productos: `${API_BASE}/api/productos?pagination[pageSize]=50`,
+    clientePublic: `${API_BASE}/api/clientes/public`,
     checkout: `${API_BASE}/api/ordenes/checkout`,
   };
+
+  let clienteId = null;
 
   function setStatus(msg, isError = false) {
     statusEl.textContent = msg || '';
@@ -90,8 +96,22 @@
       phone: document.getElementById('phone').value.trim(),
     };
 
+    setStatus('Guardando cliente...');
+    if (!clienteId) {
+      const created = await fetchJSON(api.clientePublic, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cliente),
+      });
+      clienteId = created?.id;
+      clientInfoEl.textContent = clienteId
+        ? `Cliente guardado: ${cliente.email} (id ${clienteId})`
+        : '';
+    }
+
     setStatus('Creando orden y preferencia en Mercado Pago...');
     const payload = {
+      clienteId,
       cliente,
       items: [{ productId, quantity }],
     };
@@ -109,6 +129,54 @@
     }
   }
 
+  async function saveClientOnly() {
+    const cliente = {
+      name: document.getElementById('name').value.trim(),
+      lastname: document.getElementById('lastname').value.trim(),
+      email: document.getElementById('email').value.trim(),
+      phone: document.getElementById('phone').value.trim(),
+    };
+    setStatus('Guardando cliente...');
+    try {
+      const created = await fetchJSON(api.clientePublic, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(cliente),
+      });
+      clienteId = created?.id;
+      clientInfoEl.textContent = clienteId
+        ? `Cliente guardado: ${cliente.email} (id ${clienteId})`
+        : '';
+      setStatus('Cliente guardado, listo para comprar.');
+      localStorage.setItem('testCheckoutClienteId', clienteId ?? '');
+      localStorage.setItem('testCheckoutClienteEmail', cliente.email ?? '');
+    } catch (e) {
+      setStatus(e.message ?? String(e), true);
+    }
+  }
+
+  function resetClient() {
+    clienteId = null;
+    clientInfoEl.textContent = 'Cliente no guardado';
+    localStorage.removeItem('testCheckoutClienteId');
+    localStorage.removeItem('testCheckoutClienteEmail');
+    setStatus('Cliente reseteado.');
+  }
+
+  function restoreClient() {
+    const storedId = localStorage.getItem('testCheckoutClienteId');
+    const storedEmail = localStorage.getItem('testCheckoutClienteEmail');
+    if (storedId) {
+      clienteId = Number(storedId);
+      clientInfoEl.textContent = `Cliente guardado: ${storedEmail ?? ''} (id ${storedId})`;
+    } else {
+      clientInfoEl.textContent = 'Cliente no guardado';
+    }
+  }
+
   refreshBtn.onclick = loadProducts;
+  saveClientBtn.onclick = saveClientOnly;
+  resetClientBtn.onclick = resetClient;
+  restoreClient();
   loadProducts();
 })();

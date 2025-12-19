@@ -77,6 +77,11 @@ button:hover {
   transform: translateY(-1px);
   box-shadow: 0 10px 25px rgba(56, 189, 248, 0.25);
 }
+.ghost {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
 .danger {
   color: var(--danger);
   font-size: 14px;
